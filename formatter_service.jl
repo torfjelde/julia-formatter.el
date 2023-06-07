@@ -54,20 +54,47 @@ function format_data(rpc_message)
     out_text = text_to_format
 
     toml_config = something(rpc_message["params"]["toml_config"], Dict())
-    preferred_config=Dict(
+    preferred_config = Dict(
         # options that will not alter the number of lines in text
         # why? because altering the lines of text will confuse the users
         # since they're using this in live coding
-        "remove_extra_newlines"=>false,
-        "pipe_to_function_call"=>false,
-        "short_to_long_function_def"=>false,
-        "always_use_return"=>false,
-        "annotate_untyped_fields_with_any"=>false,
-        "always_for_in"=>false, # see Reactive.jl loops
+        "remove_extra_newlines" => false,
+        "pipe_to_function_call" => false,
+        "short_to_long_function_def" => false,
+        "always_use_return" => false,
+        "annotate_untyped_fields_with_any" => false,
+        "always_for_in" => false, # see Reactive.jl loops
     )
-    actual_config=merge(preferred_config, toml_config)
+    if haskey(toml_config, "style")
+        toml_config["style"] = let style = toml_config["style"]
+            if style == "yas" && isdefined(JuliaFormatter, :YASStyle)
+                JuliaFormatter.YASStyle()
+            elseif style == "blue" && isdefined(JuliaFormatter, :BlueStyle)
+                JuliaFormatter.BlueStyle()
+            elseif style == "sciml" && isdefined(JuliaFormatter, :SciMLStyle)
+                JuliaFormatter.SciMLStyle()
+            elseif style == "minimal" && isdefined(JuliaFormatter, :MinimalStyle)
+                JuliaFormatter.MinimalStyle()
+            else
+                JuliaFormatter.DefaultStyle()
+            end
+        end
+    end
+    actual_config = if haskey(toml_config, "style")
+        # In this case, merging with the above will override the style, which we do not want.
+        toml_config
+    else
+        merge(preferred_config, toml_config)
+    end
+
+    # Drop the `format_markdown` key from the config, since it's not a valid option for `format_text`.
+    delete!(actual_config, "format_markdown")
+
     if strip(text_to_format) ≠ ""
-        out_text = format_text(text_to_format;[Symbol(k) => v for (k, v) in pairs(actual_config)]...)
+        out_text = format_text(
+            text_to_format;
+            [Symbol(k) => v for (k, v) in pairs(actual_config)]...,
+        )
     end
     # split text into lines, right-stripped, corroctly indented
     lines = String[l for l in split(out_text, "\n")]
