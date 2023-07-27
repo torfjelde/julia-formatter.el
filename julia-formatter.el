@@ -74,7 +74,7 @@
   :type 'boolean)
 
 (defcustom julia-formatter-format-on-navigation
-  nil
+  t
   "When non-nil, formatting also occurs when navigating the buffer."
   :type 'boolean)
 
