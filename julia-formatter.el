@@ -73,6 +73,11 @@
   "When non-nil, format before save when julia-formatter-mode is activated."
   :type 'boolean)
 
+(defcustom julia-formatter-format-on-navigation
+  nil
+  "When non-nil, formatting also occurs when navigating the buffer."
+  :type 'boolean)
+
 (defcustom julia-formatter-should-compile-julia-image
   'always-prompt
   "How to prompt the user for image compilation.
@@ -346,18 +351,19 @@ saving."
 
   (julia-formatter--ensured-server)
 
-  (setq-local beginning-of-defun-function
-              (if julia-formatter-mode
-                  #'julia-formatter-beginning-of-defun
-                (default-value beginning-of-defun-function)))
-  (setq-local end-of-defun-function
-              (if julia-formatter-mode
-                  #'julia-formatter-end-of-defun
-                (default-value end-of-defun-function)))
-  (setq-local indent-region-function
-              (if julia-formatter-mode
-                  #'julia-formatter-format-region
-                (default-value indent-region-function)))
+  (when julia-formatter-format-on-navigation
+      (setq-local beginning-of-defun-function
+                  (if julia-formatter-mode
+                      #'julia-formatter-beginning-of-defun
+                    (default-value 'beginning-of-defun-function)))
+    (setq-local end-of-defun-function
+                (if julia-formatter-mode
+                    #'julia-formatter-end-of-defun
+                  (default-value 'end-of-defun-function)))
+    (setq-local indent-region-function
+                (if julia-formatter-mode
+                    #'julia-formatter-format-region
+                  (default-value 'indent-region-function))))
   (setq-local julia-formatter--config
               `(fetching . ,(julia-formatter--parsed-toml-future)))
   (when (boundp 'aggressive-indent-modes-to-prefer-defun)
