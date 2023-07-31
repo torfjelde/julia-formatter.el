@@ -78,6 +78,11 @@
   "When non-nil, formatting also occurs when navigating the buffer."
   :type 'boolean)
 
+(defcustom julia-formatter-require-toml
+  nil
+  "When non-nil, a .JuliaFormatter.toml file needs to be present for the mode to activate."
+  :type 'boolean)
+
 (defcustom julia-formatter-should-compile-julia-image
   'always-prompt
   "How to prompt the user for image compilation.
@@ -132,6 +137,9 @@ Useful for loading Julia scripts and such."
     (cl-assert this-package-directory)
     this-package-directory))
 
+(defun julia-formatter--has-toml-p ()
+  "Return non-nil if a .JuliaFormatter.toml can be located."
+  (locate-dominating-file default-directory ".JuliaFormatter.toml"))
 
 (defun julia-formatter--parsed-toml-future ()
   "Parse toml file in background process."
@@ -349,28 +357,29 @@ When `julia-formatter-setup-for-save' is non-nil, will format buffer before
 saving."
   :lighter " fmt.jl"
 
-  (julia-formatter--ensured-server)
+  (cond
+   (julia-formatter-mode
+    (if (or (not julia-formatter-require-toml) (julia-formatter--has-toml-p))
+        (progn
+          (julia-formatter--ensured-server)
 
-  (when julia-formatter-format-on-navigation
-      (setq-local beginning-of-defun-function
-                  (if julia-formatter-mode
-                      #'julia-formatter-beginning-of-defun
-                    (default-value 'beginning-of-defun-function)))
-    (setq-local end-of-defun-function
-                (if julia-formatter-mode
-                    #'julia-formatter-end-of-defun
-                  (default-value 'end-of-defun-function)))
-    (setq-local indent-region-function
-                (if julia-formatter-mode
-                    #'julia-formatter-format-region
-                  (default-value 'indent-region-function))))
-  (setq-local julia-formatter--config
-              `(fetching . ,(julia-formatter--parsed-toml-future)))
-  (when (boundp 'aggressive-indent-modes-to-prefer-defun)
-    (add-hook 'aggressive-indent-modes-to-prefer-defun 'julia-mode))
-  (if julia-formatter-mode
-      (add-hook 'before-save-hook #'julia-formatter-format-buffer nil t)
-    (remove-hook 'before-save-hook #'julia-formatter-format-buffer t)))
+          (when julia-formatter-format-on-navigation
+            (setq-local beginning-of-defun-function #'julia-formatter-beginning-of-defun)
+            (setq-local end-of-defun-function #'julia-formatter-end-of-defun)
+            (setq-local indent-region-function #'julia-formatter-format-region)
+            (setq-local julia-formatter--config `(fetching . ,(julia-formatter--parsed-toml-future))))
+          (when (boundp 'aggressive-indent-modes-to-prefer-defun)
+            (add-hook 'aggressive-indent-modes-to-prefer-defun 'julia-mode))
+          (add-hook 'before-save-hook #'julia-formatter-format-buffer nil t))
+      (progn
+        (message "No TOML file found in directory tree; not enabling julia-formatter-mode. To enable anyway, set `julia-formatter-require-toml' to nil.")
+        (setq julia-formatter-mode nil))))
+   (t
+    (when julia-formatter-format-on-navigation
+      (setq-local beginning-of-defun-function (default-value 'beginning-of-defun-function))
+      (setq-local end-of-defun-function (default-value 'end-of-defun-function))
+      (setq-local indent-region-function (default-value 'indent-region-function)))
+    (remove-hook 'before-save-hook #'julia-formatter-format-buffer t))))
 
 (provide 'julia-formatter)
 ;;; julia-formatter.el ends here
