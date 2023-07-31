@@ -372,8 +372,7 @@ saving."
     (setq-local beginning-of-defun-function (default-value 'beginning-of-defun-function))
     (setq-local end-of-defun-function (default-value 'end-of-defun-function))
     (setq-local indent-region-function (default-value 'indent-region-function))
-    (setq-local julia-formatter--config `(fetching . ,(julia-formatter--parsed-toml-future)))
-    (remove-hook 'before-save-hook #'julia-formatter-format-buffer t))))
+    (setq-local julia-formatter--config `(fetching . ,(julia-formatter--parsed-toml-future))))))
 
 (provide 'julia-formatter)
 ;;; julia-formatter.el ends here
