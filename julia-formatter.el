@@ -132,7 +132,7 @@ Useful for loading Julia scripts and such."
     (cl-assert this-package-directory)
     this-package-directory))
 
-(defun julia-formatter--locate-toml-directory ()
+(defun julia-formatter--has-toml-p ()
   "Return non-nil if a .JuliaFormatter.toml can be located."
   (locate-dominating-file default-directory ".JuliaFormatter.toml"))
 
@@ -354,7 +354,7 @@ saving."
 
   (cond
    (julia-formatter-mode
-    (if (or (not julia-formatter-require-toml) (julia-formatter--locate-toml-directory))
+    (if (or (not julia-formatter-require-toml) (julia-formatter--has-toml-p))
         (progn
           (julia-formatter--ensured-server)
 
